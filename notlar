@@ -1,0 +1,13 @@
+--- UMUT DV_PROCESSING BIAS TUNER NOTES ---
+
+dv-gui c/c++ ile çalıştığından 1-2m eventte dahi bir yavaşlama olmuyor.
+dv-processing python ile çalıştığından yüksek sayılı eventlerde yavaşlama oluyor.
+
+
+1) offline parameterr search
+	define performance metric
+	SNR?
+	
+2) online autobiasing !!
+	
+
