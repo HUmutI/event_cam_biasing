@@ -10,4 +10,18 @@ dv-processing python ile çalıştığından yüksek sayılı eventlerde yavaşl
 	
 2) online autobiasing !!
 	
+https://web.archive.org/web/20201021124635/https://inivation.github.io/inivation-docs/Advanced%20configurations/User_guide_-_Biasing.html
+https://docs.inivation.com/hardware/hardware-advanced-usage/biasing.html
+https://github.com/uzh-rpg/rpg_dvs_ros?tab=readme-ov-file
+https://apps.dtic.mil/sti/trecms/pdf/AD1181169.pdf
+https://docs.google.com/document/d/1fb7VA8tdoxuYqZfrPfT46_wiT1isQZwTHgX8O22dJ0Q/edit?tab=t.0#heading=h.en40wtalica4
 
+How to reconcile in practice
+
+    Start by choosing the minimum I<sub>pr</sub> that actually sees your low-lux scene—you want just enough base photocurrent to reliably produce events on real edges.
+
+    Next tweak I<sub>sf</sub> up until the event-stream “loudness” (edge amplitude) is high but the high-frequency hiss is controlled.
+
+    If you still see too much shot-noise, trim I<sub>pr</sub> back a notch. If real edges start disappearing, raise I<sub>pr</sub> again.
+
+    Finally, use your refractory and filtering stages to clean up whatever residuals remain.
