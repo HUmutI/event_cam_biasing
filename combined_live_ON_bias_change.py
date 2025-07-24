@@ -36,13 +36,29 @@ def on_fine_trackbar(val):
     coarse, _ = cams[0].getDavis346BiasCoarseFine(DAVIS.Davis346BiasCF.On)
     set_on_threshold(coarse, val)
 
+
 def make_event_image(events, resolution):
-    """Rasterize an EventStore into a small grayscale image."""
+    """
+    Vectorized rasterization of an EventStore into a color image.
+    ON events→green (0,255,0), OFF→red (0,0,255), background→black.
+    """
     w, h = resolution
-    img = np.zeros((h, w), dtype=np.uint8)
-    for ev in events:
-        x, y = ev.x(), ev.y()
-        img[y, x] = 255 if ev.polarity() else 127
+    img = np.zeros((h, w, 3), dtype=np.uint8)  # color image
+    arr = events.numpy()
+
+    if arr.dtype.names:
+        xs = arr["x"].astype(np.int32)
+        ys = arr["y"].astype(np.int32)
+        pol = arr["polarity"].astype(bool)
+    else:
+        xs = arr[:, 1].astype(np.int32)
+        ys = arr[:, 2].astype(np.int32)
+        pol = arr[:, 3].astype(bool)
+
+    # ON events: green channel
+    img[ys[pol], xs[pol], 1] = 255
+    # OFF events: red channel
+    img[ys[~pol], xs[~pol], 2] = 255
     return img
 
 def main():
