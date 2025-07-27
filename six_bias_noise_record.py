@@ -7,7 +7,8 @@ interactive_bias_tuner_record_filter.py
   (coarse & fine) on both cameras simultaneously, and see the effect immediately.
 – Uses vectorized accumulation via EventStore.numpy() for maximum speed.
 – Applies a BackgroundActivityNoiseFilter to DVS event streams.
-– Records all filtered DVS events into AEDAT4 files using dv_processing.io.MonoCameraWriter.
+– Records all filtered DVS events into AEDAT4 files using dv_processing.io.MonoCameraWriter,
+  starting only after pressing 'r', and stops/exit on pressing 'q'.
 """
 
 import dv_processing as dv
@@ -63,14 +64,13 @@ def make_fine_cb(bias_cf):
     return cb
 
 
-
 def make_event_image(events, resolution):
     """
     Vectorized rasterization of an EventStore into a color image.
     ON events→green (0,255,0), OFF→red (0,0,255), background→black.
     """
     w, h = resolution
-    img = np.zeros((h, w, 3), dtype=np.uint8)  # color image
+    img = np.zeros((h, w, 3), dtype=np.uint8)
     arr = events.numpy()
 
     if arr.dtype.names:
@@ -82,14 +82,15 @@ def make_event_image(events, resolution):
         ys = arr[:, 2].astype(np.int32)
         pol = arr[:, 3].astype(bool)
 
-    # ON events: green channel
-    img[ys[pol], xs[pol], 1] = 255
-    # OFF events: red channel
-    img[ys[~pol], xs[~pol], 2] = 255
+    img[ys[pol], xs[pol], 1] = 255   # ON→green
+    img[ys[~pol], xs[~pol], 2] = 255 # OFF→red
     return img
 
 
 def main():
+    # Recording flag: only write events after pressing 'r'
+    recording = False
+
     # 1) Open cameras, start streams, set up writers and filters
     for serial in SERIALS:
         cam = dv.io.camera.open(serial)
@@ -125,15 +126,15 @@ def main():
     cv2.namedWindow(ctrl_win, cv2.WINDOW_NORMAL)
     for name, bias_cf in KEY_BIASES:
         c0, f0 = cams[0].getDavis346BiasCoarseFine(bias_cf)
-        cv2.createTrackbar(f"{name} coarse", ctrl_win, c0, 8,  make_coarse_cb(bias_cf))
+        cv2.createTrackbar(f"{name} coarse", ctrl_win, c0, 8, make_coarse_cb(bias_cf))
         cv2.createTrackbar(f"{name} fine",   ctrl_win, f0, 255, make_fine_cb(bias_cf))
         print(f"[Bias] {name:15s} init → coarse={c0}, fine={f0}")
 
-    # 3) Main loop: display, filter & record
+    # 3) Main loop: display, filter & record on 'r', exit on 'q'
     try:
         while True:
             for i, cam in enumerate(cams):
-                # APS frame
+                # Show APS frame
                 frame = cam.getNextFrame()
                 if frame is not None:
                     cv2.imshow(f"{SERIALS[i]} Frame", frame.image)
@@ -147,15 +148,23 @@ def main():
                         filt.accept(evs)
                         evs = filt.generateEvents()
 
-                    # record
-                    writers[i].writeEvents(evs)
+                    # record if started
+                    if recording:
+                        writers[i].writeEvents(evs)
 
-                    # display
+                    # display events
                     ev_img = make_event_image(evs, resolutions[i])
                     cv2.imshow(f"{SERIALS[i]} Events", ev_img)
 
-            # Exit on 'q'
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('r'):
+                recording = True
+                print("[Record] STARTED")
+            elif key == ord('q'):
+                if recording:
+                    print("[Record] STOPPED and exiting")
+                else:
+                    print("Exiting")
                 break
 
     finally:

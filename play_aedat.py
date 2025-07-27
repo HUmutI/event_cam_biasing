@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-play_events_only.py
+play_events_only_color.py
 
 – Opens two AEDAT4 recordings side-by-side (event raster only).
 – Uses dv_processing.io.MonoCameraRecording to treat files like cameras.
-– Skips frame reads and only fetches event batches.
+– Displays ON events in green and OFF events in red.
 """
 
 import dv_processing as dv
@@ -12,23 +12,32 @@ import cv2
 import numpy as np
 
 # Your AEDAT4 filenames here:
-FILES = ["AERS0004.aedat4", "00000591.aedat4"]
+FILES = ["koridor_gece_changed_params_no_noise_filter.aedat4", "koridor_gece_changed_params_no_noise_filterAERS.aedat4"]
+
 
 def make_event_image(events, resolution):
+    """
+    Vectorized rasterization of an EventStore into a color image.
+    ON events → green (0,255,0), OFF events → red (0,0,255), background → black.
+    """
     w, h = resolution
-    img = np.zeros((h, w), dtype=np.uint8)
+    img = np.zeros((h, w, 3), dtype=np.uint8)
     arr = events.numpy()
+
     if arr.dtype.names:
         xs = arr["x"].astype(np.int32)
         ys = arr["y"].astype(np.int32)
         pol = arr["polarity"].astype(bool)
     else:
-        xs = arr[:,1].astype(np.int32)
-        ys = arr[:,2].astype(np.int32)
-        pol = arr[:,3].astype(bool)
-    vals = pol.astype(np.uint8)*128 + 127
-    img[ys, xs] = vals
+        xs = arr[:, 1].astype(np.int32)
+        ys = arr[:, 2].astype(np.int32)
+        pol = arr[:, 3].astype(bool)
+
+    # Color channels: BGR
+    img[ys[pol], xs[pol], 1] = 255   # ON → green channel
+    img[ys[~pol], xs[~pol], 2] = 255 # OFF → red channel
     return img
+
 
 def main():
     readers    = []
@@ -50,7 +59,7 @@ def main():
                     ev_img = make_event_image(ev_store, resolutions[i])
                     cv2.imshow(f"{FILES[i]} Events", ev_img)
 
-            # quit on ’q’
+            # quit on 'q'
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
@@ -58,6 +67,7 @@ def main():
         for r in readers:
             del r
         cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()
