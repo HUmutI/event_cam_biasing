@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 
 # Your AEDAT4 filenames here:
-FILES = ["koridor_gece_changed_params_no_noise_filter.aedat4", "koridor_gece_changed_params_no_noise_filterAERS.aedat4"]
+FILES = ["room_light_default_params.aedat4", "koridor_gece_changed_params_no_noise_filterAERS.aedat4"]
 
 
 def make_event_image(events, resolution):
